@@ -1,3 +1,5 @@
+.phony: run delete
+
 run:
 	terraform init
 	terraform plan

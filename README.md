@@ -1,5 +1,6 @@
 # Prerequisites
 
+- Add a ticket for opening block 25 port in vultr [Blocked Ports](https://www.vultr.com/docs/what-ports-are-blocked/)
 - Ansible and ansible-playbook
 - Terraform v1.3.8
 - Vultr API [Documentation](https://www.vultr.com/api/#section/Authentication/API%20Key)
@@ -34,7 +35,7 @@ variable "ssh_key_path_private" {
 ```
 
 
-# RUN
+# Run
 
 To run use the following command:
 
