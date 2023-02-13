@@ -1,0 +1,127 @@
+---
+- name: Configuring server with mailserver-docker 
+  hosts: all
+  tasks:
+  - name: Creating user 
+    user:
+      name:  docker-mail
+      shell: /bin/bash
+      groups: sudo 
+      append: yes
+      state: present
+      create_home: True
+  - name: Install apt-transport-https
+    ansible.builtin.apt:
+      name:
+        - apt-transport-https
+        - ca-certificates
+        - lsb-release
+        - gnupg
+      state: latest
+      update_cache: true
+
+  - name: Add signing key
+    ansible.builtin.apt_key:
+      url: "https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg"
+      state: present
+
+  - name: Add repository into sources list
+    ansible.builtin.apt_repository:
+      repo: "deb [arch={{ ansible_architecture }}] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+      state: present
+      filename: docker
+
+  - name: Install Docker
+    ansible.builtin.apt:
+      name:
+        - docker
+        - docker.io
+        - docker-compose
+        - docker-registry
+      state: latest
+      update_cache: true
+
+ 
+  - name: Install snap
+    ansible.builtin.apt:
+      name:
+        - snapd
+      state: latest
+      update_cache: true
+
+     
+  - name: Cloning docker mail-server repo
+    ansible.builtin.git:
+      repo: https://github.com/docker-mailserver/docker-mailserver.git
+      dest: /root/git/docker-mailserver
+      single_branch: yes
+      force: true
+      version: master
+
+  - name: Enable a docker systemd service
+    ansible.builtin.systemd:
+      name: docker 
+      state: started
+      enabled: true
+
+  - name: Enabling ufw systemd services
+    systemd:
+      name: ufw
+      enabled: yes
+      state: started
+
+  - name: Configuring ufw
+    shell: |
+      ufw allow 80 
+      ufw allow 443
+      ufw allow 22
+      
+  - name: Run setup.sh command 
+    ansible.builtin.shell:
+      cmd: bash /root/git/docker-mailserver/setup.sh
+
+  - name: Running Setup file  
+    ansible.builtin.shell:
+      cmd: bash /root/git/docker-mailserver/setup.sh
+
+
+  - name: Apply docker-compose Template
+    template:
+      src: docker-compose.yml.j2 
+      dest: /root/git/docker-mailserver/docker-compose.yml
+      
+  - name: installing certbot snap package
+    snap:
+      name: certbot
+      classic: true
+
+  - name: certbot symlink
+    file:
+      src: /snap/bin/certbot
+      dest: /usr/bin/certbot
+      state: link     
+      
+#  - name: "using certbot on {{domain}} and www.{{domain}}"
+#    command: "certbot certonly --standalone  -d {{domain}}  -d www.{{domain}} --non-interactive --agree-tos -m 'webmaster@jbolivar.co' --expand"
+
+  - name: Recursively remove directory
+    ansible.builtin.file:
+      path: /root/git/docker-mailserver/docker-data/dms/config/opendkim/keys/{{domain}}
+      state: absent
+
+  - name: configure DKIM key 
+    shell:
+      cmd: |
+        bash /root/git/docker-mailserver/setup.sh config dkim keysize 512 domain {{domain}}
+
+  - name: filter dkim value only
+    shell:
+      cmd:   cat /root/git/docker-mailserver/docker-data/dms/config/opendkim/keys/{{domain}}/mail.txt | tr -d '\n' | sed 's/.*\"p=\(.*\)\".*/\1/g' > /root/git/docker-mailserver/docker-data/dms/config/opendkim/keys/{{domain}}/mail.output
+      
+  - name: Fetch dkim key 
+    ansible.builtin.fetch:
+      src: /root/git/docker-mailserver/docker-data/dms/config/opendkim/keys/{{domain}}/mail.output
+      dest: ./dkim.output
+      flat: yes
+
+ 
