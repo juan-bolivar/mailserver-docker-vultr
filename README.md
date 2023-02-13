@@ -1,6 +1,10 @@
+
+## **Important Note: This is only for personal use, don't abuse the service as Vultr is a great vps provider and don't want to get permanently blocked the SMTP port** 
+
 # Prerequisites
 
-- Add a ticket for opening block 25 port in vultr [Blocked Ports](https://www.vultr.com/docs/what-ports-are-blocked/)
+
+- Create a ticket for opening block 25 port in vultr [Blocked Ports](https://www.vultr.com/docs/what-ports-are-blocked/)
 - Ansible and ansible-playbook
 - Terraform v1.3.8
 - Vultr API [Documentation](https://www.vultr.com/api/#section/Authentication/API%20Key)
